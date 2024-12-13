@@ -176,7 +176,7 @@ def _convert_dtype(dtype: str):
 
 
 
-def generate_tk_mlir(config: GemmConfig, vmfb_file: Path):
+def generate_tk_mlir(config: GemmConfig):
     # TODO: Enable waves_per_eu
     # TODO: Use scheduling barriers with LLVM patch
     tc = get_tk_tuned_config(config)
@@ -264,7 +264,7 @@ def generate_tk_mlir(config: GemmConfig, vmfb_file: Path):
     with tk.gen.TestLaunchContext(
         hyperparams,
         canonicalize=True,
-        create_vmfb_file=vmfb_file,
+        create_vmfb_file="",
         run_config=config,
         schedule=schedule,
     ):
@@ -286,7 +286,7 @@ def compile_gemm_config(
     # Generate mlir content
     if tk:
         try:
-            mlir_content = generate_tk_mlir(config, vmfb_file)
+            mlir_content = generate_tk_mlir(config)
         except Exception as e:
             error_file = vmfb_dir / (config.get_name() + "_error.txt")
             print(f"Failed to compile {config.get_name()}. Error dumped in {error_file}")
@@ -300,9 +300,6 @@ def compile_gemm_config(
     # Write MLIR content to file
     with open(mlir_file, "w") as f:
         f.write(mlir_content)
-
-    if tk:
-        return mlir_file, vmfb_file
 
     # Compile MLIR to VMFB
     exec_args = [
